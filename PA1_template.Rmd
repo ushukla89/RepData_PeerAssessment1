@@ -1,25 +1,72 @@
 ---
-title: "Reproducible Research: Peer Assessment 1"
-output: 
-  html_document:
-    keep_md: true
+title: "PA1_Assignment 1"
 ---
 
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
 
-## Loading and preprocessing the data
+## Read in data
+```{r, echo=T}
+#unzip ("activity.zip")
+dat <- read.csv("activity.csv")
+```
+
+### Plotting histogram of number of steps
+```{r, echo=T}
+hist(aggregate(steps~date, dat, FUN=sum)[,2],
+     main="Total number of steps per day",
+     xlab="number of steps",ylim=c(0,45),sub="original data")
+```
+
+## Calculate mean and median of number of steps per day
+```{r, echo=T}
+mean(aggregate(steps~date, dat, FUN=sum)[,2])
+median(aggregate(steps~date, dat, FUN=sum)[,2])
+```
+
+## Time series plot
+```{r, echo=T}
+## subset data to average across all days
+dat2 <- aggregate(steps~ interval,dat,mean)
+plot(dat2,type="l")
+
+## 5-min interval (averaged across all days) containing maximum steps
+dat2[with(dat2, order(-steps)), ][1,]
+```
+
+## Impute missing values
+```{r, echo=T}
+## Calculate the missing values in the data
+sum(is.na(dat))
+
+##imputing missing values with average number of steps for that 5-min interval across all days
+dat_new <- dat
+
+dat_new$steps <- ifelse(is.na(dat_new$steps), dat2$steps, dat_new$steps)
+
+```
+
+## Use the new dataframe to create plots and compare with original results
+
+```{r,echo=T}
+hist(aggregate(steps~date, dat_new, FUN=sum)[,2],
+     main="Total number of steps taken each day",
+     xlab="number of steps",ylim=c(0,45),sub="new data")
+
+mean(aggregate(steps~date, dat_new, FUN=sum)[,2])
+median(aggregate(steps~date, dat_new, FUN=sum)[,2])
+```
 
 
+## Weekdays and Weekends
+```{r, echo=T}
+dat_new$date <-as.POSIXct(dat_new$date,tz="",format="%Y-%m-%d")
 
-## What is mean total number of steps taken per day?
+dat_new$day <- weekdays(dat_new$date)
+dat_new$day <- ifelse(dat_new$day %in% c("Saturday", "Sunday"),"weekend","weekday")
 
-
-
-## What is the average daily activity pattern?
-
-
-
-## Imputing missing values
-
-
-
-## Are there differences in activity patterns between weekdays and weekends?
+par(mfrow=c(2,1))
+plot(aggregate(steps~interval,dat_new[dat_new$day=="weekday",],mean),type="l",main="Weekdays")
+plot(aggregate(steps~interval,dat_new[dat_new$day=="weekend",],mean),type="l",main="Weekends")
+```
